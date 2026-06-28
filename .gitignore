@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Local environments and secrets
+.agents/
+.codex/
+.env
+.venv/
+venv/
+apikey.txt
+*.key
+
+# Generated API/cache artifacts
+results/api_cache/
+
+# TeX build products
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.log
+paper/*.out
+paper/*.synctex.gz
+
+# Local bundles and extracted template provenance
+dist/
+paper/colm_template/
+paper/related_work_notes.md
+
+# Internal planning notes
+trace_level_policy_workshop_plan.md
+
+# Exploratory runs not used in the reported paper tables
+results/api_gpt41mini_12_metrics.csv
+results/api_gpt41mini_4_metrics.csv
+results/api_smoke_metrics.csv
+results/api_local_gpt41mini_12_metrics.csv
+results/api_local_gpt41mini_seed1_12_metrics.csv
+results/api_policy_prompt_gpt41mini_12_metrics.csv
+results/api_traceguard_gpt41mini_seed1_12_metrics.csv
+results/raw_traces/api_local_gpt41mini_4.jsonl
+results/raw_traces/api_traceguard_gpt41mini_4.jsonl
+results/raw_traces/api_local_gpt41nano_12.jsonl
+results/raw_traces/api_local_gpt41nano_4_v2.jsonl
+results/tables/api_gpt41mini_12_results.md
+results/tables/api_gpt41mini_4_results.md
+results/tables/api_smoke_results.md
+results/tables/api_local_gpt41mini_12_results.md
+results/tables/api_local_gpt41mini_seed1_12_results.md
+results/tables/api_policy_prompt_gpt41mini_12_results.md
+results/tables/api_traceguard_gpt41mini_seed1_12_results.md

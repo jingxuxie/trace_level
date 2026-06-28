@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="300" viewBox="0 0 860 300" role="img">
+<rect x="0" y="0" width="860" height="300" fill="white"/>
+<text x="430.0" y="26.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="17" fill="#111827">Local calls allowed; trace-level sink blocked</text>
+<text x="28.0" y="110.0" text-anchor="start" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#6b7280">Local</text>
+<text x="28.0" y="215.0" text-anchor="start" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#6b7280">TraceGuard</text>
+<rect x="38" y="77" width="104" height="56" rx="6" fill="#f9fafb" stroke="#16a34a" stroke-width="2"/>
+<circle cx="55" cy="105" r="11" fill="#16a34a"/>
+<text x="55.0" y="109.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="white">OK</text>
+<text x="98.0" y="103.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#111827">search docs</text>
+<text x="98.0" y="119.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#16a34a">allow</text>
+<rect x="38" y="182" width="104" height="56" rx="6" fill="#f9fafb" stroke="#16a34a" stroke-width="2"/>
+<circle cx="55" cy="210" r="11" fill="#16a34a"/>
+<text x="55.0" y="214.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="white">OK</text>
+<text x="98.0" y="208.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#111827">search docs</text>
+<text x="98.0" y="224.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#16a34a">allow</text>
+<line x1="136" y1="105" x2="209" y2="105" stroke="#374151" stroke-width="1.5"/>
+<line x1="136" y1="210" x2="209" y2="210" stroke="#374151" stroke-width="1.5"/>
+<rect x="203" y="77" width="104" height="56" rx="6" fill="#f9fafb" stroke="#16a34a" stroke-width="2"/>
+<circle cx="220" cy="105" r="11" fill="#16a34a"/>
+<text x="220.0" y="109.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="white">OK</text>
+<text x="263.0" y="103.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#111827">read doc</text>
+<text x="263.0" y="119.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#16a34a">allow</text>
+<rect x="203" y="182" width="104" height="56" rx="6" fill="#f9fafb" stroke="#16a34a" stroke-width="2"/>
+<circle cx="220" cy="210" r="11" fill="#16a34a"/>
+<text x="220.0" y="214.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="white">OK</text>
+<text x="263.0" y="208.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#111827">read doc</text>
+<text x="263.0" y="224.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#16a34a">allow</text>
+<line x1="301" y1="105" x2="374" y2="105" stroke="#374151" stroke-width="1.5"/>
+<line x1="301" y1="210" x2="374" y2="210" stroke="#374151" stroke-width="1.5"/>
+<rect x="368" y="77" width="104" height="56" rx="6" fill="#f9fafb" stroke="#16a34a" stroke-width="2"/>
+<circle cx="385" cy="105" r="11" fill="#16a34a"/>
+<text x="385.0" y="109.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="white">OK</text>
+<text x="428.0" y="103.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#111827">summarize</text>
+<text x="428.0" y="119.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#16a34a">allow</text>
+<rect x="368" y="182" width="104" height="56" rx="6" fill="#f9fafb" stroke="#16a34a" stroke-width="2"/>
+<circle cx="385" cy="210" r="11" fill="#16a34a"/>
+<text x="385.0" y="214.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="white">OK</text>
+<text x="428.0" y="208.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#111827">summarize</text>
+<text x="428.0" y="224.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#16a34a">allow</text>
+<line x1="466" y1="105" x2="539" y2="105" stroke="#374151" stroke-width="1.5"/>
+<line x1="466" y1="210" x2="539" y2="210" stroke="#374151" stroke-width="1.5"/>
+<rect x="533" y="77" width="104" height="56" rx="6" fill="#f9fafb" stroke="#16a34a" stroke-width="2"/>
+<circle cx="550" cy="105" r="11" fill="#16a34a"/>
+<text x="550.0" y="109.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="white">OK</text>
+<text x="593.0" y="103.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#111827">find recipient</text>
+<text x="593.0" y="119.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#16a34a">allow</text>
+<rect x="533" y="182" width="104" height="56" rx="6" fill="#f9fafb" stroke="#16a34a" stroke-width="2"/>
+<circle cx="550" cy="210" r="11" fill="#16a34a"/>
+<text x="550.0" y="214.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="white">OK</text>
+<text x="593.0" y="208.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#111827">find recipient</text>
+<text x="593.0" y="224.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#16a34a">allow</text>
+<line x1="631" y1="105" x2="704" y2="105" stroke="#374151" stroke-width="1.5"/>
+<line x1="631" y1="210" x2="704" y2="210" stroke="#374151" stroke-width="1.5"/>
+<rect x="698" y="77" width="104" height="56" rx="6" fill="#f9fafb" stroke="#16a34a" stroke-width="2"/>
+<circle cx="715" cy="105" r="11" fill="#16a34a"/>
+<text x="715.0" y="109.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="white">OK</text>
+<text x="758.0" y="103.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#111827">send email</text>
+<text x="758.0" y="119.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#16a34a">allow</text>
+<rect x="698" y="182" width="104" height="56" rx="6" fill="#f9fafb" stroke="#dc2626" stroke-width="2"/>
+<circle cx="715" cy="210" r="11" fill="#dc2626"/>
+<text x="715.0" y="214.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="white">X</text>
+<text x="758.0" y="208.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#111827">send email</text>
+<text x="758.0" y="224.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#dc2626">block</text>
+<text x="420.0" y="64.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#6b7280">hidden tag: confidential, AtlasCo, external_share=false</text>
+<text x="750.0" y="265.0" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#dc2626">reason: internal_data_to_external_recipient</text>
+</svg>

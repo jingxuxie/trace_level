@@ -1,0 +1,9 @@
+[project]
+name = "tracebreak"
+version = "0.1.0"
+description = "Synthetic trace-level policy benchmark for tool-using agent systems"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.setuptools.packages.find]
+include = ["tracebreak*"]

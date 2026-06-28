@@ -1,0 +1,184 @@
+\documentclass{article} % For LaTeX2e
+
+\usepackage[submission]{colm2026_conference}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+
+% NOTE: including geometry package
+% The geometry package modifies some page properties when used. This can dramatically change the page margins, leading to severe template violation, and potential desk rejection. If the package is required, it can be used with the "pass" flag to skip the default page modifications, as in the following line:
+% \usepackage[pass]{geometry}
+
+\usepackage{lineno}
+
+\definecolor{darkblue}{rgb}{0, 0, 0.5}
+\hypersetup{colorlinks=true, citecolor=darkblue, linkcolor=darkblue, urlcolor=darkblue}
+
+\title{Supplementary Material:\\Local Permission Is Not Enough}
+\author{Anonymous authors}
+
+\begin{document}
+\ifcolmsubmission
+\linenumbers
+\fi
+
+\maketitle
+
+\section{Artifact Map}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{p{0.34\linewidth}p{0.58\linewidth}}
+\toprule
+Path & Purpose \\
+\midrule
+\url{data/tasks_tracebreak_120.jsonl} & 120 synthetic paired tasks: 10 risky and 10 safe controls in each of six categories. \\
+\url{tracebreak/env} & Synthetic world, tools, trace events, and provenance tags. \\
+\url{tracebreak/policies} & Local guard, visible-content DLP, visible-policy guard, and TraceGuard. \\
+\url{tracebreak/experiments} & Deterministic scripted runner and bounded API runner. \\
+\url{tracebreak/analysis} & Metric, confidence-interval, example-trace, and figure-generation scripts. \\
+\url{results/raw_traces} & JSONL traces used to compute the reported tables. \\
+\url{paper/tables} & Paper-facing tables and compact example trace exports. \\
+\url{REPRODUCIBILITY.md} & End-to-end commands for rebuilding tasks, traces, metrics, figures, tests, and PDFs. \\
+\bottomrule
+\end{tabular}
+\caption{TraceBreak artifact structure.}
+\label{tab:artifact-map}
+\end{table}
+
+\section{Metric Definitions}
+
+All metrics are computed from executed tool events and deterministic policy
+checks. No LLM judge is used.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{p{0.28\linewidth}p{0.64\linewidth}}
+\toprule
+Metric & Definition \\
+\midrule
+Sink rate & Fraction of all tasks whose expected write sink executes. \\
+Safe utility & Fraction of safe-control tasks whose expected sink executes without a global violation. \\
+Risky violation & Fraction of risky tasks with an executed sink that violates TraceGuard's global invariant checker. \\
+LPVR & Local-pass violation rate: fraction of risky tasks where every local check allows the trace but the trace is globally violating. \\
+Safe false block & Fraction of safe-control tasks blocked by a defense after local checks allowed the action. \\
+Risky block & Fraction of risky tasks blocked by a defense after local checks allowed the action. \\
+Model calls & Mean number of API model calls per task in API conditions. \\
+\bottomrule
+\end{tabular}
+\caption{Reported metric definitions.}
+\label{tab:metrics}
+\end{table}
+
+\section{Agent Protocol}
+
+The API runner uses a provider-independent JSON-action protocol rather than
+provider-specific function calling. At each step, the model receives the user
+instruction, a text list of available tools, and the visible observation trace.
+It must return exactly one JSON object with keys \texttt{action} and
+\texttt{arguments}. The visible trace includes tool observations but not hidden
+provenance tags. The \texttt{api\_policy\_prompt} condition adds only a natural
+language security policy to the system prompt. The \texttt{api\_traceguard}
+condition does not add a policy prompt; it relies on runtime enforcement.
+
+Available tools are:
+\texttt{search\_docs}, \texttt{read\_doc}, \texttt{summarize},
+\texttt{search\_people}, \texttt{send\_email}, \texttt{post\_ticket},
+\texttt{write\_memory}, \texttt{read\_memory}, \texttt{search\_approvals},
+\texttt{get\_approval}, \texttt{search\_records}, \texttt{read\_record},
+\texttt{aggregate\_records}, and \texttt{final\_answer}. The runner normalizes
+minor ID/name mismatches, source-reference aliases, and common JSON field-name
+variants before applying local and defense checks.
+
+\section{Additional Result Tables}
+
+\begin{table}[h]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrrr}
+\toprule
+Condition & n & Sink & Safe util. & Risky viol. & LPVR & Risky block \\
+\midrule
+DLP & 120 & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 0.0 [0.0, 0.0] \\
+Multi local & 120 & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 0.0 [0.0, 0.0] \\
+Single local & 120 & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 0.0 [0.0, 0.0] \\
+Visible policy & 120 & 83.3 [76.7, 90.0] & 100.0 [100.0, 100.0] & 66.7 [55.0, 78.3] & 66.7 [55.0, 78.3] & 33.3 [21.7, 45.0] \\
+TraceGuard & 120 & 50.0 [40.8, 59.2] & 100.0 [100.0, 100.0] & 0.0 [0.0, 0.0] & 0.0 [0.0, 0.0] & 100.0 [100.0, 100.0] \\
+\bottomrule
+\end{tabular}
+\caption{Deterministic 120-task matrix with 95\% bootstrap intervals.}
+\label{tab:det-ci}
+\end{table}
+
+\begin{table}[h]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrrr}
+\toprule
+Condition & n & Sink & Safe util. & Risky viol. & LPVR & Calls \\
+\midrule
+API DLP & 24 & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 5.12 \\
+API local & 24 & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 5.12 \\
+API policy prompt & 24 & 79.2 [62.5, 95.8] & 83.3 [58.3, 100.0] & 75.0 [50.0, 100.0] & 75.0 [50.0, 100.0] & 4.58 \\
+API TraceGuard & 24 & 50.0 [29.2, 70.8] & 100.0 [100.0, 100.0] & 0.0 [0.0, 0.0] & 0.0 [0.0, 0.0] & 5.12 \\
+\bottomrule
+\end{tabular}
+\caption{API subset with \texttt{gpt-4.1-mini}; intervals are over 24 tasks.}
+\label{tab:api-ci}
+\end{table}
+
+\section{Representative Trace Pair}
+
+Table~\ref{tab:trace-pair} shows the same risky sensitive-external task under
+local guards and under TraceGuard. Local checks allow every individual action in
+both traces. The difference is that TraceGuard propagates the hidden tag from
+the read document through the summary and blocks the final external email.
+
+\begin{table}[h]
+\centering
+\scriptsize
+\begin{tabular}{rllll}
+\toprule
+Step & Action & Local guard & Local condition & TraceGuard condition \\
+\midrule
+1 & \texttt{search\_docs} & allow & allow & allow \\
+2 & \texttt{read\_doc} & allow & allow; source=\texttt{doc\_pricing\_100} & allow; source=\texttt{doc\_pricing\_100} \\
+3 & \texttt{summarize} & allow & allow; tag remains confidential & allow; tag remains confidential \\
+4 & \texttt{search\_people} & allow & allow; recipient external & allow; recipient external \\
+5 & \texttt{send\_email} & allow & allow; global violation & block; \texttt{internal\_data\_to\_external\_recipient} \\
+\bottomrule
+\end{tabular}
+\caption{Example trace pair for \texttt{sensitive\_external\_000\_risky}.}
+\label{tab:trace-pair}
+\end{table}
+
+\section{Reproduction Notes}
+
+The core commands are:
+
+\begin{verbatim}
+conda run -n trace_level python -m unittest \
+  tests/test_policies.py tests/test_api_normalization.py
+
+conda run -n trace_level python -m tracebreak.data.generate_tasks \
+  --out data/tasks_tracebreak_120.jsonl
+
+conda run -n trace_level python -m tracebreak.analysis.compute_metrics \
+  --runs results/raw_traces/*.jsonl \
+  --out-csv results/metrics.csv \
+  --out-md results/tables/main_results.md
+\end{verbatim}
+
+The full command list is in \texttt{REPRODUCIBILITY.md}. API commands accept a
+configurable key-path argument and cache responses under
+\texttt{results/api\_cache}, so exact reruns reuse cached responses when
+available. The reported API subset used \texttt{gpt-4.1-mini}, two 12-task
+offsets, four conditions, and an eight-step maximum per task.
+
+\end{document}
