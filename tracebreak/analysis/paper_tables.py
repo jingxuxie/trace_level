@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import json
-import random
 from collections import defaultdict
 from pathlib import Path
 from statistics import mean
@@ -36,28 +34,19 @@ def pct(values: list[bool]) -> float:
     return 100.0 * sum(bool(value) for value in values) / len(values)
 
 
-def bootstrap_ci(
-    values: list[bool],
-    *,
-    samples: int = 5000,
-    seed: int = 0,
-    alpha: float = 0.05,
-) -> tuple[float, float]:
-    if not values:
-        return (0.0, 0.0)
-    rng = random.Random(seed)
-    n = len(values)
-    estimates = []
-    for _ in range(samples):
-        draw = [values[rng.randrange(n)] for _ in range(n)]
-        estimates.append(pct(draw))
-    estimates.sort()
-    lo_index = int((alpha / 2.0) * (samples - 1))
-    hi_index = int((1.0 - alpha / 2.0) * (samples - 1))
-    return estimates[lo_index], estimates[hi_index]
+def format_percent(value: float) -> str:
+    if value in {0.0, 100.0}:
+        return str(int(value))
+    if abs(value - round(value)) < 0.05 or value >= 10.0:
+        return str(int(round(value)))
+    return f"{value:.1f}".rstrip("0").rstrip(".")
 
 
-def summarize_with_ci(rows: list[dict[str, Any]], samples: int, seed: int) -> list[dict[str, str]]:
+def format_calls(value: float) -> str:
+    return f"{value:.1f}".rstrip("0").rstrip(".")
+
+
+def summarize_point_estimates(rows: list[dict[str, Any]]) -> list[dict[str, str]]:
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
         grouped[row["condition"]].append(row)
@@ -68,19 +57,17 @@ def summarize_with_ci(rows: list[dict[str, Any]], samples: int, seed: int) -> li
             "condition": condition,
             "n": str(len(condition_rows)),
         }
-        for idx, (label, split, fn) in enumerate(METRICS):
+        for label, split, fn in METRICS:
             selected = select_rows(condition_rows, split)
             values = [bool(fn(row)) for row in selected]
-            estimate = pct(values)
-            lo, hi = bootstrap_ci(values, samples=samples, seed=seed + idx)
-            formatted[label] = f"{estimate:.1f} [{lo:.1f}, {hi:.1f}]"
+            formatted[label] = format_percent(pct(values))
         model_calls = [
             row["metrics"].get("model_calls")
             for row in condition_rows
             if "model_calls" in row["metrics"]
         ]
         formatted["model calls"] = (
-            f"{mean(model_calls):.2f}" if model_calls else "-"
+            format_calls(mean(model_calls)) if model_calls else "-"
         )
         out.append(formatted)
     return out
@@ -147,14 +134,12 @@ def _latex_escape(text: str) -> str:
 def write_outputs(rows: list[dict[str, str]], out_md: Path, out_tex: Path) -> None:
     out_md.parent.mkdir(parents=True, exist_ok=True)
     out_tex.parent.mkdir(parents=True, exist_ok=True)
-    note = (
-        "Rates are percentages with 95% nonparametric bootstrap confidence intervals.\n\n"
-    )
+    note = "Rates are percentages; model calls are means per task.\n\n"
     out_md.write_text(note + markdown_table(rows), encoding="utf-8")
     out_tex.write_text(
         latex_table(
             rows,
-            "TraceBreak results with 95% bootstrap confidence intervals.",
+            "TraceBreak point-estimate results.",
             "tab:tracebreak-results",
         ),
         encoding="utf-8",
@@ -166,12 +151,10 @@ def main() -> None:
     parser.add_argument("--runs", nargs="+", required=True)
     parser.add_argument("--out-md", required=True)
     parser.add_argument("--out-tex", required=True)
-    parser.add_argument("--samples", type=int, default=5000)
-    parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
     rows = read_runs(args.runs)
-    summary = summarize_with_ci(rows, samples=args.samples, seed=args.seed)
+    summary = summarize_point_estimates(rows)
     write_outputs(summary, Path(args.out_md), Path(args.out_tex))
     print(f"read {len(rows)} runs")
     print(f"wrote {args.out_md}")

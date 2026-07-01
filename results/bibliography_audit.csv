@@ -1,0 +1,2 @@
+tex_files,bib_file,bbl_file,cited_keys,bib_entries,bbl_entries,undefined_keys,duplicate_bib_keys,stale_bbl_keys,missing_bbl_keys,stale_denied_keys,invalid_arxiv_entries,undefined_warning_sources,pass
+paper/main.tex;paper/supplement.tex,paper/references.bib,paper/main.bbl,17,19,17,,,,,,,,True

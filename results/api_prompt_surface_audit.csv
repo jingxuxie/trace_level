@@ -1,0 +1,8 @@
+condition,normalized_condition,agent_topology,tasks,prompts,hidden_metadata_prompt_hits,hidden_metadata_keys_found,task_label_prompt_hits,task_label_keys_found,source_ref_instruction_hits,expected_source_ref_instruction_hits,policy_prompt_hits,expected_policy_prompt_hits,multi_agent_prompt_hits,expected_multi_agent_prompt_hits,pass
+api_local,local,single,120,520,0,,0,,520,520,0,0,0,0,True
+api_dlp,dlp,single,120,520,0,,0,,520,520,0,0,0,0,True
+api_policy_prompt,policy_prompt,single,120,520,0,,0,,520,520,520,520,0,0,True
+api_visible_policy,visible_policy,single,120,520,0,,0,,520,520,520,520,0,0,True
+api_traceguard,traceguard,single,120,520,0,,0,,520,520,0,0,0,0,True
+api_traceguard_inferred,traceguard_inferred,single,120,520,0,,0,,520,520,0,0,0,0,True
+api_multi_traceguard,traceguard,multi,120,520,0,,0,,520,520,0,0,520,520,True

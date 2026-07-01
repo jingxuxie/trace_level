@@ -1,0 +1,21 @@
+\begin{table}[t]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{llrrrr}
+\toprule
+Category & Decisive fact & Visible block & Visible viol. & Metadata block & TG block \\
+\midrule
+aggregation threshold & visible bulk count & 2/2 & 0/2 & 2/2 & 2/2 \\
+approval scope & visible approval & 2/2 & 0/2 & 2/2 & 2/2 \\
+audience restriction & hidden audience & 0/2 & 2/2 & 2/2 & 2/2 \\
+cross tenant & hidden tenant & 0/2 & 2/2 & 2/2 & 2/2 \\
+memory laundering & hidden memory provenance & 0/2 & 2/2 & 2/2 & 2/2 \\
+sensitive external & hidden confidentiality/recipient & 0/2 & 2/2 & 2/2 & 2/2 \\
+\midrule
+overall & visible subset + hidden metadata & 4/12 & 8/12 & 12/12 & 12/12 \\
+\bottomrule
+\end{tabular}
+\caption{Same-action visibility-gap audit over fixed \texttt{gpt-4.1-mini} API-local traces. Visible-policy review catches only categories whose decisive fact is visible at the sink; metadata-aware review and TraceGuard catch every risky sink.}
+\label{tab:visibility-gap-audit}
+\end{table}

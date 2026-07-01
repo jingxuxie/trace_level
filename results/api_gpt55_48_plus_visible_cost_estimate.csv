@@ -1,0 +1,6 @@
+model,condition,tasks,nominal_calls,budget_calls,nominal_prompt_tokens,nominal_completion_tokens,nominal_total_tokens,nominal_cost_usd,budget_prompt_tokens,budget_completion_tokens,budget_total_tokens,budget_cost_usd,input_price_per_mtok,output_price_per_mtok
+gpt-5.5,api_local,48,208,384,142264,45760,188024,2.08412,320820,84480,405300,4.1385,5.0,30.0
+gpt-5.5,api_dlp,48,208,384,142264,45760,188024,2.08412,320820,84480,405300,4.1385,5.0,30.0
+gpt-5.5,api_policy_prompt,48,208,384,166040,45760,211800,2.203,364720,84480,449200,4.358,5.0,30.0
+gpt-5.5,api_traceguard,48,208,384,142264,45760,188024,2.08412,320080,84480,404560,4.1348,5.0,30.0
+gpt-5.5,api_visible_policy,48,208,384,166040,45760,211800,2.203,364504,84480,448984,4.35692,5.0,30.0

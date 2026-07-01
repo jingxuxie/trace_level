@@ -1,0 +1,7 @@
+boundary,source,required_phrases,missing_phrases,missing,note,pass
+api_subset_scope,paper/main.tex,2,0,,Main-paper API claims are scoped to the cached gpt-4.1-mini subset.,True
+api_preliminary_not_leaderboard,paper/main.tex,2,0,,The limitations distinguish benchmark evidence from a broad model or product claim.,True
+synthetic_no_real_services,paper/main.tex,2,0,,The release/safety claim stays tied to synthetic local simulator data.,True
+provenance_dependency,paper/main.tex,2,0,,The paper preserves the distinction between cooperative refs and trusted runtime inference.,True
+live_recovery_future_work,paper/main.tex,1,0,,The repair-oracle result is not overstated as live model recovery.,True
+modern_model_rows_missing,results/tables/research_readiness_report.md,3,0,,The readiness report keeps the minimum-package modern-model gap explicit.,True

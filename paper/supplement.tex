@@ -6,6 +6,7 @@
 \usepackage{hyperref}
 \usepackage{url}
 \usepackage{booktabs}
+\usepackage{tikz}
 
 % NOTE: including geometry package
 % The geometry package modifies some page properties when used. This can dramatically change the page margins, leading to severe template violation, and potential desk rejection. If the package is required, it can be used with the "pass" flag to skip the default page modifications, as in the following line:
@@ -37,11 +38,11 @@ Path & Purpose \\
 \midrule
 \url{data/tasks_tracebreak_120.jsonl} & 120 synthetic paired tasks: 10 risky and 10 safe controls in each of six categories. \\
 \url{tracebreak/env} & Synthetic world, tools, trace events, and provenance tags. \\
-\url{tracebreak/policies} & Local guard, visible-content DLP, visible-policy guard, and TraceGuard. \\
+\url{tracebreak/policies} & Local guard, visible-content DLP, visible-policy guard, TraceGuard, and StrictTraceGuard. \\
 \url{tracebreak/experiments} & Deterministic scripted runner and bounded API runner. \\
-\url{tracebreak/analysis} & Metric, confidence-interval, example-trace, and figure-generation scripts. \\
+\url{tracebreak/analysis} & Metric, paper-table, example-trace, and figure-generation scripts. \\
 \url{results/raw_traces} & JSONL traces used to compute the reported tables. \\
-\url{paper/tables} & Paper-facing tables and compact example trace exports. \\
+\url{paper/tables} & Paper-facing tables, source-reference ablations, and compact example trace exports. \\
 \url{REPRODUCIBILITY.md} & End-to-end commands for rebuilding tasks, traces, metrics, figures, tests, and PDFs. \\
 \bottomrule
 \end{tabular}
@@ -104,15 +105,15 @@ variants before applying local and defense checks.
 \toprule
 Condition & n & Sink & Safe util. & Risky viol. & LPVR & Risky block \\
 \midrule
-DLP & 120 & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 0.0 [0.0, 0.0] \\
-Multi local & 120 & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 0.0 [0.0, 0.0] \\
-Single local & 120 & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 0.0 [0.0, 0.0] \\
-Visible policy & 120 & 83.3 [76.7, 90.0] & 100.0 [100.0, 100.0] & 66.7 [55.0, 78.3] & 66.7 [55.0, 78.3] & 33.3 [21.7, 45.0] \\
-TraceGuard & 120 & 50.0 [40.8, 59.2] & 100.0 [100.0, 100.0] & 0.0 [0.0, 0.0] & 0.0 [0.0, 0.0] & 100.0 [100.0, 100.0] \\
+DLP & 120 & 100 & 100 & 100 & 100 & 0 \\
+Multi local & 120 & 100 & 100 & 100 & 100 & 0 \\
+Single local & 120 & 100 & 100 & 100 & 100 & 0 \\
+Visible policy & 120 & 83 & 100 & 67 & 67 & 33 \\
+TraceGuard & 120 & 50 & 100 & 0 & 0 & 100 \\
 \bottomrule
 \end{tabular}
-\caption{Deterministic 120-task matrix with 95\% bootstrap intervals.}
-\label{tab:det-ci}
+\caption{Deterministic 120-task matrix.}
+\label{tab:det-supp-results}
 \end{table}
 
 \begin{table}[h]
@@ -123,15 +124,83 @@ TraceGuard & 120 & 50.0 [40.8, 59.2] & 100.0 [100.0, 100.0] & 0.0 [0.0, 0.0] & 0
 \toprule
 Condition & n & Sink & Safe util. & Risky viol. & LPVR & Calls \\
 \midrule
-API DLP & 24 & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 5.12 \\
-API local & 24 & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 100.0 [100.0, 100.0] & 5.12 \\
-API policy prompt & 24 & 79.2 [62.5, 95.8] & 83.3 [58.3, 100.0] & 75.0 [50.0, 100.0] & 75.0 [50.0, 100.0] & 4.58 \\
-API TraceGuard & 24 & 50.0 [29.2, 70.8] & 100.0 [100.0, 100.0] & 0.0 [0.0, 0.0] & 0.0 [0.0, 0.0] & 5.12 \\
+API DLP & 24 & 100 & 100 & 100 & 100 & 5.1 \\
+API local & 24 & 100 & 100 & 100 & 100 & 5.1 \\
+API policy prompt & 24 & 79 & 83 & 75 & 75 & 4.6 \\
+API TraceGuard & 24 & 50 & 100 & 0 & 0 & 5.1 \\
 \bottomrule
 \end{tabular}
-\caption{API subset with \texttt{gpt-4.1-mini}; intervals are over 24 tasks.}
-\label{tab:api-ci}
+\caption{API subset with \texttt{gpt-4.1-mini}.}
+\label{tab:api-supp-results}
 \end{table}
+
+\input{figures/api_security_utility.tex}
+
+\input{tables/api_gpt41mini_24_by_category.tex}
+
+\input{tables/traceguard_block_reason_audit.tex}
+
+\input{tables/api_gpt41mini_policy_prompt_diagnostics.tex}
+
+\input{tables/authority_transfer_deterministic_120.tex}
+
+\input{tables/injection_overlay_deterministic_120.tex}
+
+\input{tables/decoy_stress_deterministic_120.tex}
+
+\input{tables/same_action_replay_gpt41mini_24.tex}
+
+\input{tables/api_gpt41mini_visibility_gap_audit.tex}
+
+\input{tables/api_gpt41mini_source_ref_compliance.tex}
+
+\begin{table}[h]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{llrrrrr}
+\toprule
+Source refs & Defense & Safe util. & Risky viol. & LPVR & Risky block & Safe FP \\
+\midrule
+Cooperative & TraceGuard & 100 & 0 & 0 & 100 & 0 \\
+Deleted at sink & TraceGuard & 83 & 100 & 100 & 0 & 0 \\
+Deleted at sink & Inferred TraceGuard & 100 & 0 & 0 & 100 & 0 \\
+Deleted at sink & StrictTraceGuard & 8.3 & 0 & 0 & 100 & 92 \\
+Corrupted refs & TraceGuard & 83 & 83 & 83 & 17 & 17 \\
+Corrupted refs & Inferred TraceGuard & 100 & 0 & 0 & 100 & 0 \\
+Corrupted refs & StrictTraceGuard & 83 & 83 & 83 & 17 & 17 \\
+\bottomrule
+\end{tabular}
+\caption{Source-reference robustness ablation on the same 24
+\texttt{gpt-4.1-mini} TraceGuard traces. Deleted rows remove sink
+\texttt{source\_refs}; corrupted rows replace them with a benign prior public
+reference. Inferred TraceGuard reconstructs the sink tag from prior
+runtime-owned event tags. StrictTraceGuard blocks missing provenance but does
+not address present-but-corrupted references.}
+\label{tab:source-ref-ablation}
+\end{table}
+
+\begin{table}[h]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrrrr}
+\toprule
+Condition & Candidates & Repair success & Repair block & Risky viol. & Max steps \\
+\midrule
+API TraceGuard repair oracle & 12 & 100 & 0 & 0 & 1 \\
+Scripted TraceGuard repair oracle & 60 & 100 & 0 & 0 & 2 \\
+\bottomrule
+\end{tabular}
+\caption{Repair-oracle upper bounds over blocked risky TraceGuard traces. The
+oracle appends matched safe-control continuations after the block. Scripted
+aggregation-threshold repairs require one extra aggregation step before the safe
+email, so this table shows that compliant continuations exist but does not
+measure whether the language-model agent discovers them.}
+\label{tab:repair-oracle}
+\end{table}
+
+\clearpage
 
 \section{Representative Trace Pair}
 
@@ -139,6 +208,8 @@ Table~\ref{tab:trace-pair} shows the same risky sensitive-external task under
 local guards and under TraceGuard. Local checks allow every individual action in
 both traces. The difference is that TraceGuard propagates the hidden tag from
 the read document through the summary and blocks the final external email.
+The artifact also includes one aligned local/TraceGuard example for each policy
+category in \texttt{paper/tables/api\_gpt41mini\_category\_examples.md}.
 
 \begin{table}[h]
 \centering
@@ -179,6 +250,8 @@ The full command list is in \texttt{REPRODUCIBILITY.md}. API commands accept a
 configurable key-path argument and cache responses under
 \texttt{results/api\_cache}, so exact reruns reuse cached responses when
 available. The reported API subset used \texttt{gpt-4.1-mini}, two 12-task
-offsets, four conditions, and an eight-step maximum per task.
+offsets, four conditions, and an eight-step maximum per task. For future
+budgeted API sweeps, the runner records provider-reported token usage when it is
+returned, and the metric script aggregates token totals by condition.
 
 \end{document}

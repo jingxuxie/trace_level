@@ -21,10 +21,35 @@ COLORS = {
 }
 
 
-def write_security_utility_svg(rows: list[dict[str, Any]], out_path: Path) -> None:
+SECURITY_UTILITY_CONDITIONS = [
+    "api_dlp",
+    "api_local",
+    "api_policy_prompt",
+    "api_traceguard",
+]
+
+
+def security_utility_points(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     summary = summarize(rows)
     by_condition = {row["condition"]: row for row in summary}
-    conditions = ["api_local", "api_dlp", "api_policy_prompt", "api_traceguard"]
+    points: list[dict[str, Any]] = []
+    for condition in SECURITY_UTILITY_CONDITIONS:
+        if condition not in by_condition:
+            continue
+        row = by_condition[condition]
+        points.append(
+            {
+                "condition": condition,
+                "label": condition.removeprefix("api_").replace("_", " "),
+                "safe_utility_pct": float(row["safe_utility_pct"]),
+                "risky_violation_pct": float(row["risky_global_violation_pct"]),
+            }
+        )
+    return points
+
+
+def write_security_utility_svg(rows: list[dict[str, Any]], out_path: Path) -> None:
+    points = security_utility_points(rows)
     width, height = 760, 360
     plot_x, plot_y = 90, 40
     plot_w, plot_h = 610, 240
@@ -40,7 +65,7 @@ def write_security_utility_svg(rows: list[dict[str, Any]], out_path: Path) -> No
         f'<rect x="0" y="0" width="{width}" height="{height}" fill="white"/>',
         f'<line x1="{plot_x}" y1="{plot_y + plot_h}" x2="{plot_x + plot_w}" y2="{plot_y + plot_h}" stroke="{COLORS["line"]}" stroke-width="1.5"/>',
         f'<line x1="{plot_x}" y1="{plot_y}" x2="{plot_x}" y2="{plot_y + plot_h}" stroke="{COLORS["line"]}" stroke-width="1.5"/>',
-        _text(plot_x + plot_w / 2, height - 28, "Safe false-block rate (%)", 14, "middle"),
+        _text(plot_x + plot_w / 2, height - 28, "Safe utility (%)", 14, "middle"),
         _text(22, plot_y + plot_h / 2, "Risky violation rate (%)", 14, "middle", rotate=-90),
     ]
     for tick in [0, 25, 50, 75, 100]:
@@ -53,22 +78,110 @@ def write_security_utility_svg(rows: list[dict[str, Any]], out_path: Path) -> No
         if tick not in {0, 100}:
             parts.append(f'<line x1="{plot_x}" y1="{y:.1f}" x2="{plot_x + plot_w}" y2="{y:.1f}" stroke="#e5e7eb"/>')
 
-    for condition in conditions:
-        if condition not in by_condition:
-            continue
-        row = by_condition[condition]
-        x = sx(float(row["safe_false_block_pct"]))
-        y = sy(float(row["risky_global_violation_pct"]))
+    for index, point in enumerate(points):
+        x = sx(float(point["safe_utility_pct"]))
+        y = sy(float(point["risky_violation_pct"]))
+        condition = point["condition"]
         color = COLORS.get(condition, "#2563eb")
-        label = condition.removeprefix("api_").replace("_", " ")
+        label = "local / DLP" if condition == "api_local" else point["label"]
+        label_dx, label_dy = _svg_label_offset(point, index)
         parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="8" fill="{color}" stroke="white" stroke-width="2"/>')
-        parts.append(_text(x + 12, y - 10, label, 12, "start", COLORS["text"]))
-        parts.append(_text(x + 12, y + 7, f'utility {float(row["safe_utility_pct"]):.0f}%', 10, "start", COLORS["muted"]))
+        if condition == "api_dlp":
+            continue
+        parts.append(_text(x + label_dx, y + label_dy, label, 12, "start", COLORS["text"]))
+        parts.append(_text(x + label_dx, y + label_dy + 16, f'risk {float(point["risky_violation_pct"]):.0f}%', 10, "start", COLORS["muted"]))
 
-    parts.append(_text(width / 2, 24, "Utility/security tradeoff on the 24-task API subset", 16, "middle"))
+    parts.append(_text(width / 2, 24, "Security-utility frontier on the 24-task API subset", 16, "middle"))
     parts.append("</svg>")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("\n".join(parts) + "\n", encoding="utf-8")
+
+
+def write_security_utility_tikz(rows: list[dict[str, Any]], out_path: Path) -> None:
+    points = security_utility_points(rows)
+
+    def coord(value: float) -> float:
+        return value / 100.0
+
+    lines = [
+        "\\begin{figure}[h]",
+        "\\centering",
+        "\\small",
+        "\\begin{tikzpicture}[x=7.0cm,y=3.0cm,every node/.style={font=\\scriptsize}]",
+        "  \\draw[->, gray!70] (0,0) -- (1.07,0) node[right] {Safe utility (\\%)};",
+        "  \\draw[->, gray!70] (0,0) -- (0,1.08) node[above] {Risky violation (\\%)};",
+    ]
+    for tick in [0, 25, 50, 75, 100]:
+        x = coord(tick)
+        y = coord(tick)
+        lines.append(
+            f"  \\draw[gray!45] ({x:.2f},0) -- ({x:.2f},-0.025) node[below] {{{tick}}};"
+        )
+        lines.append(
+            f"  \\draw[gray!45] (0,{y:.2f}) -- (-0.025,{y:.2f}) node[left] {{{tick}}};"
+        )
+        if tick not in {0, 100}:
+            lines.append(f"  \\draw[gray!15] (0,{y:.2f}) -- (1,{y:.2f});")
+    lines.append("  \\node[anchor=south east, text=gray!70] at (1,0.02) {desired};")
+    for index, point in enumerate(points):
+        condition = point["condition"]
+        label = "local / DLP" if condition == "api_local" else _tex_escape(point["label"])
+        color = _tikz_color(condition)
+        x = coord(float(point["safe_utility_pct"]))
+        y = coord(float(point["risky_violation_pct"]))
+        anchor, dx, dy = _tikz_label_offset(point, index)
+        lines.append(f"  \\filldraw[{color}, draw=white, line width=0.7pt] ({x:.3f},{y:.3f}) circle (2.4pt);")
+        if condition == "api_dlp":
+            continue
+        lines.append(
+            f"  \\node[anchor={anchor}, align=left] at ({x + dx:.3f},{y + dy:.3f})"
+            f" {{{label}\\\\{{\\color{{gray}}risk {float(point['risky_violation_pct']):.0f}\\%}}}};"
+        )
+    lines.extend(
+        [
+            "\\end{tikzpicture}",
+            "\\caption{Security-utility frontier on the 24-task \\texttt{gpt-4.1-mini} API subset. "
+            "The desired region is high safe-control utility and low risky-violation rate. "
+            "Local guards and DLP preserve utility but violate every risky task; TraceGuard preserves utility while eliminating risky violations.}",
+            "\\label{fig:api-security-utility}",
+            "\\end{figure}",
+        ]
+    )
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _svg_label_offset(point: dict[str, Any], index: int) -> tuple[float, float]:
+    if point["condition"] == "api_local":
+        return -112, 18
+    if point["condition"] == "api_dlp":
+        return 0, 0
+    if point["condition"] == "api_traceguard":
+        return -112, -24
+    return 12, -12
+
+
+def _tikz_label_offset(point: dict[str, Any], index: int) -> tuple[str, float, float]:
+    if point["condition"] == "api_local":
+        return "east", -0.018, -0.010
+    if point["condition"] == "api_dlp":
+        return "east", 0.0, 0.0
+    if point["condition"] == "api_traceguard":
+        return "south east", -0.018, 0.040
+    return "west", 0.020, 0.000
+
+
+def _tikz_color(condition: str) -> str:
+    return {
+        "api_local": "black!60",
+        "api_dlp": "black!35",
+        "api_policy_prompt": "orange!80!black",
+        "api_traceguard": "green!55!black",
+    }.get(condition, "blue!70!black")
+
+
+def _tex_escape(text: str) -> str:
+    return text.replace("_", "\\_")
 
 
 def write_trace_schematic_svg(out_path: Path) -> None:
@@ -154,8 +267,10 @@ def main() -> None:
     rows = read_runs(args.runs)
     out_dir = Path(args.out_dir)
     write_security_utility_svg(rows, out_dir / "api_security_utility.svg")
+    write_security_utility_tikz(rows, out_dir / "api_security_utility.tex")
     write_trace_schematic_svg(out_dir / "traceguard_schematic.svg")
     print(f"wrote {out_dir / 'api_security_utility.svg'}")
+    print(f"wrote {out_dir / 'api_security_utility.tex'}")
     print(f"wrote {out_dir / 'traceguard_schematic.svg'}")
 
 

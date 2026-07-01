@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{llrrrr}
+\toprule
+Category & Expected reason & Det. & API & Safe Det/API & Unexpected Det/API \\
+\midrule
+aggregation threshold & aggregation threshold & 10/10 & 2/2 & 0/0 & 0/0 \\
+approval scope & approval scope & 10/10 & 2/2 & 0/0 & 0/0 \\
+audience restriction & audience mismatch & 10/10 & 2/2 & 0/0 & 0/0 \\
+cross tenant & cross tenant & 10/10 & 2/2 & 0/0 & 0/0 \\
+memory laundering & external recipient & 10/10 & 2/2 & 0/0 & 0/0 \\
+sensitive external & external recipient & 10/10 & 2/2 & 0/0 & 0/0 \\
+\bottomrule
+\end{tabular}
+\caption{TraceGuard block-reason audit. Det. and API count risky rows whose block reason matches the category invariant; safe and unexpected columns are deterministic/API counts.}
+\label{tab:block-reason-audit}
+\end{table}

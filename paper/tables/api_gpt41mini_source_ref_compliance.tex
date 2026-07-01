@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrrrr}
+\toprule
+Condition & Runs & Sinks & Valid refs & Missing/empty & Invalid & Final & Blocked \\
+\midrule
+Local guards & 24 & 24 & 24/24 & 0 & 0 & 0 & 0 \\
+DLP & 24 & 24 & 24/24 & 0 & 0 & 0 & 0 \\
+Policy prompt & 24 & 20 & 20/20 & 0 & 0 & 4 & 0 \\
+TraceGuard & 24 & 24 & 24/24 & 0 & 0 & 0 & 12 \\
+\midrule
+Overall & 96 & 92 & 92/92 & 0 & 0 & 4 & 12 \\
+\bottomrule
+\end{tabular}
+\caption{Cooperative API source-reference compliance before source-reference stress tests. All executed \texttt{gpt-4.1-mini} write sinks carry nonempty refs to prior observations; policy prompting has fewer sinks because four runs end in \texttt{final\_answer}.}
+\label{tab:source-ref-compliance}
+\end{table}

@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrrr}
+\toprule
+Category & Local viol. & DLP viol. & Prompt viol. & TG viol. & TG block & TG safe util. \\
+\midrule
+aggregation threshold & 100 & 100 & 100 & 0 & 100 & 100 \\
+approval scope & 100 & 100 & 0 & 0 & 100 & 100 \\
+audience restriction & 100 & 100 & 100 & 0 & 100 & 100 \\
+cross tenant & 100 & 100 & 50 & 0 & 100 & 100 \\
+memory laundering & 100 & 100 & 100 & 0 & 100 & 100 \\
+sensitive external & 100 & 100 & 100 & 0 & 100 & 100 \\
+\bottomrule
+\end{tabular}
+\caption{Category-level API results on the 24-task \texttt{gpt-4.1-mini} subset. Each category has two risky and two safe-control tasks.}
+\label{tab:api-category}
+\end{table}

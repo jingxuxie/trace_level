@@ -1,0 +1,18 @@
+# Research Readiness Report
+
+Minimum package status: 3/5 items complete. Modern-model evidence remains incomplete until paid API rows exist.
+
+| Item | Minimum | Status | Progress | Evidence | Next action |
+| --- | --- | --- | --- | --- | --- |
+| gpt-5.4-mini 120-task sweep | yes | blocked_on_paid_api | 0/480 | results/api_gpt54mini_120_sweep_status.csv: 0/480 rows complete, 480 missing | Run the approved one-task gpt-5.4-mini smoke, then resume the four-condition 120-task sweep. |
+| gpt-5.5 48-task sweep | yes | blocked_on_paid_api | 0/192 | results/api_gpt55_48_sweep_status.csv: 0/192 rows complete, 192 missing | Run after the low-cost modern smoke/sweep path is validated; keep the generated budget caps. |
+| source-reference robustness | yes | complete | 4/4 | cooperative compliance audit plus deleted/corrupted provenance replays with inferred-source recovery | Optional live no-instruction API ablation after budget approval. |
+| category-level reporting | yes | complete | 3/3 | API by-category table and six-category example gallery | Regenerate analogous tables after modern-model sweeps complete. |
+| paper and bundle validation | yes | complete | 3/3 | compiled PDFs, release gate, and anonymized submission bundle | Rerun scripts/run_release_checks.py after any paper or result-table change. |
+| multi-agent topology 24-task status | no | blocked_on_paid_api | 0/96 | results/api_gpt54mini_multi_topology_24_sweep_status.csv: 0/96 rows complete, 96 missing | Run after the one-task modern smoke succeeds; keep the generated resume commands and budget caps. |
+| prompt-surface and recovery audits | no | complete | 4/4 | model-visible hidden-metadata audit plus recovery-prompt placement audit | Repeat after adding any new API prompt condition. |
+| critic and replay baselines | no | complete | 4/4 | same-action replay plus visible-critic and metadata-critic information-boundary accounting | Optional live critic baseline only if API budget remains after modern sweeps. |
+| deterministic stress tests | no | complete | 4/4 | scripted indirect-injection overlay and decoy-clutter checks with paper-facing tables for ordinary and runtime-inferred TraceGuard | Treat as structural stress evidence, not a live model-selection benchmark. |
+| bibliography integrity audit | no | complete | 2/2 | TeX, BibTeX, generated bibliography, and LaTeX/BibTeX logs agree with no stale or malformed citation keys | Rerun after changing related work or bibliography metadata. |
+| claim-boundary audit | no | complete | 2/2 | main manuscript and readiness report keep API scope, synthetic scope, provenance caveat, live-recovery limitation, and paid modern-model blocker explicit | Rerun after changing main-paper claims, limitations, or readiness status. |
+| paid smoke preflight | no | complete | 4/4 | strict Responses payload contract and $0.02 budget guard | Requires explicit approval before reading API key or making network call. |

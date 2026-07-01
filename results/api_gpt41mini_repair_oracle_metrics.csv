@@ -1,0 +1,3 @@
+condition,n,safe_n,risky_n,sink_rate_pct,safe_utility_pct,risky_global_violation_pct,risky_lpvr_pct,safe_false_block_pct,risky_block_pct,local_block_pct,defense_block_pct,avg_tool_calls,avg_model_calls,parse_errors,missing_source_blocks,oracle_repair_success_pct,oracle_repair_block_pct
+api_traceguard,24,12,12,50.0,100.0,0.0,0.0,0.0,100.0,0.0,50.0,4.62,5.12,0,,,
+api_traceguard_repair_oracle,12,0,12,100.0,0.0,0.0,0.0,0.0,100.0,0.0,100.0,5.5,5.5,0,,100.0,0.0

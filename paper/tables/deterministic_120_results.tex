@@ -1,0 +1,17 @@
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrrrrrrr}
+\toprule
+condition & n & Sink & Safe utility & Risky violation & LPVR & Safe false block & Risky block & model calls \\
+\midrule
+dlp & 120 & 100 & 100 & 100 & 100 & 0 & 0 & - \\
+multi\_local & 120 & 100 & 100 & 100 & 100 & 0 & 0 & - \\
+single\_local & 120 & 100 & 100 & 100 & 100 & 0 & 0 & - \\
+traceguard & 120 & 50 & 100 & 0 & 0 & 0 & 100 & - \\
+visible\_policy & 120 & 83 & 100 & 67 & 67 & 0 & 33 & - \\
+\bottomrule
+\end{tabular}
+\caption{TraceBreak point-estimate results.}
+\label{tab:tracebreak-results}
+\end{table}

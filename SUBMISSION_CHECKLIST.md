@@ -28,7 +28,17 @@ artifact.
 Run from the repository root:
 
 ```bash
+conda run -n trace_level python scripts/run_release_checks.py
+```
+
+For debugging a failed gate, the component commands are:
+
+```bash
 conda run -n trace_level python -m unittest tests/test_policies.py tests/test_api_normalization.py
+conda run -n trace_level python -m unittest tests/test_prompt_surface_audit.py
+conda run -n trace_level python -m unittest tests/test_recovery_prompt_audit.py
+conda run -n trace_level python -m unittest tests/test_bibliography_audit.py
+conda run -n trace_level python -m unittest tests/test_claim_boundary_audit.py
 conda run -n trace_level python -m compileall -q tracebreak tests
 conda run -n trace_level python -m tracebreak.analysis.verify_claims
 python scripts/build_submission_bundle.py
@@ -44,13 +54,14 @@ latexmk -pdf -interaction=nonstopmode supplement.tex
 Optional anonymity scan:
 
 ```bash
-rg -n "eston|/home|apikey|api key" README.md REPRODUCIBILITY.md SUBMISSION_CHECKLIST.md paper/*.tex tracebreak
-pdftotext paper/main.pdf - | rg -n "eston|/home|apikey|api key"
-pdftotext paper/supplement.pdf - | rg -n "eston|/home|apikey|api key"
+rg -n "LOCAL[_-]?USER|/h[o]me|api[_ -]?key|sk-(?:proj-)?[A-Za-z0-9_-]{20,}" README.md REPRODUCIBILITY.md SUBMISSION_CHECKLIST.md paper/*.tex tracebreak
+pdftotext paper/main.pdf - | rg -n "LOCAL[_-]?USER|/h[o]me|api[_ -]?key|sk-(?:proj-)?[A-Za-z0-9_-]{20,}"
+pdftotext paper/supplement.pdf - | rg -n "LOCAL[_-]?USER|/h[o]me|api[_ -]?key|sk-(?:proj-)?[A-Za-z0-9_-]{20,}"
 ```
 
-The source scan should only show the generic `../apikey.txt` placeholder in API
-reproduction instructions, not a real local path or secret.
+The source scan may show the generic `../apikey.txt` placeholder and API-key
+variable or flag names. It should not show a real local path, local username, or
+real-looking secret key. The PDF scans should have no matches.
 
 The bundle command writes `dist/tracebreak_submission_bundle.zip` and excludes
 API caches, TeX auxiliary files, local control directories, and internal notes.

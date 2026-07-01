@@ -1,0 +1,21 @@
+\begin{table}[t]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrrrr}
+\toprule
+Category & Risky viol. & Risky nonviol. & Safe util. & Safe lost & Final ans. \\
+\midrule
+aggregation threshold & 2/2 & 0/2 & 2/2 & 0/2 & 0 \\
+approval scope & 0/2 & 2/2 & 0/2 & 2/2 & 4 \\
+audience restriction & 2/2 & 0/2 & 2/2 & 0/2 & 0 \\
+cross tenant & 1/2 & 1/2 & 2/2 & 0/2 & 0 \\
+memory laundering & 2/2 & 0/2 & 2/2 & 0/2 & 0 \\
+sensitive external & 2/2 & 0/2 & 2/2 & 0/2 & 0 \\
+\midrule
+overall & 9/12 & 3/12 & 10/12 & 2/12 & 4 \\
+\bottomrule
+\end{tabular}
+\caption{Policy-prompt diagnostic on the 24-task \texttt{gpt-4.1-mini} API subset. Nonviolating risky rows are not defense blocks; they are prompt-induced non-completion or non-sink paths.}
+\label{tab:policy-prompt-diagnostic}
+\end{table}

@@ -1,0 +1,6 @@
+condition,n,safe_n,risky_n,sink_rows,safe_sink_rows,risky_sink_rows,blocked_sink_rows,final_answer_rows,sink_valid_nonempty_refs,sink_missing_refs,sink_empty_refs,sink_malformed_refs,sink_invalid_ref_events,invalid_ref_count,sink_ref_count,source_ref_compliance_pct
+api_local,24,12,12,24,12,12,0,0,24,0,0,0,0,0,29,100.0
+api_dlp,24,12,12,24,12,12,0,0,24,0,0,0,0,0,29,100.0
+api_policy_prompt,24,12,12,20,10,10,0,4,20,0,0,0,0,0,23,100.0
+api_traceguard,24,12,12,24,12,12,12,0,24,0,0,0,0,0,29,100.0
+overall,96,48,48,92,46,46,12,4,92,0,0,0,0,0,110,100.0

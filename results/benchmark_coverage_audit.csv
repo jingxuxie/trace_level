@@ -1,0 +1,8 @@
+category,task_n,risky_n,safe_n,complete_pair_n,world_seed_n,fact_visibility,flow_archetype,sink_tool_counts,unique_sink_targets,unique_source_ids,source_object_min,source_object_max,scripted_step_min,scripted_step_max,risk_safe_delta,visible_fact_task_n,hidden_fact_task_n
+aggregation_threshold,20,10,10,10,10,visible,multi_record_email,send_email=20,1,80,8,8,10,11,aggregate_only,20,0
+approval_scope,20,10,10,10,10,visible,approval_doc_email,send_email=20,2,20,2,2,4,4,recipient_id,20,0
+audience_restriction,20,10,10,10,10,hidden,audience_doc_email,send_email=20,2,10,1,1,4,4,recipient_id,0,20
+cross_tenant,20,10,10,10,10,hidden,record_ticket,post_ticket=20,2,10,1,1,2,2,customer_id,0,20
+memory_laundering,20,10,10,10,10,hidden,memory_handoff_email,send_email=20,2,10,1,1,4,4,recipient_id,0,20
+sensitive_external,20,10,10,10,10,hidden,confidential_doc_email,send_email=20,2,10,1,1,4,4,recipient_id,0,20
+overall,120,60,60,60,10,mixed,6 archetypes,post_ticket=20; send_email=100,7,130,1,8,2,11,"aggregate_only,customer_id,recipient_id",40,80

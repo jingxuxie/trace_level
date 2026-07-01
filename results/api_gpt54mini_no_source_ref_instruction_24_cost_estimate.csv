@@ -1,0 +1,2 @@
+model,condition,tasks,nominal_calls,budget_calls,nominal_prompt_tokens,nominal_completion_tokens,nominal_total_tokens,nominal_cost_usd,budget_prompt_tokens,budget_completion_tokens,budget_total_tokens,budget_cost_usd,input_price_per_mtok,output_price_per_mtok
+gpt-5.4-mini,api_traceguard,24,104,192,67716,22880,90596,0.153747,153730,42240,195970,0.3053775,0.75,4.5

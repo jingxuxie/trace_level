@@ -1,0 +1,18 @@
+\begin{table}[t]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrrrr}
+\toprule
+Condition & n & Decoy hits & Safe util. & Risky viol. & LPVR & Risky block & Safe FP \\
+\midrule
+Multi local & 120 & 260 & 100 & 100 & 100 & 0 & 0 \\
+DLP & 120 & 260 & 100 & 100 & 100 & 0 & 0 \\
+Visible policy & 120 & 260 & 100 & 67 & 67 & 33 & 0 \\
+TraceGuard & 120 & 260 & 100 & 0 & 0 & 100 & 0 \\
+Inferred TraceGuard & 120 & 260 & 100 & 0 & 0 & 100 & 0 \\
+\bottomrule
+\end{tabular}
+\caption{Deterministic decoy-ambiguity stress test. Plausible decoy documents, recipients, approvals, and records are added to each synthetic world before replaying scripted traces with search preambles.}
+\label{tab:decoy-stress}
+\end{table}
