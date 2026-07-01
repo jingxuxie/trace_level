@@ -30,137 +30,180 @@
 \maketitle
 
 \begin{abstract}
-Tool-using language-model agents are commonly protected by local tool
-permissions, prompt-level policies, confirmation prompts, and visible-content
-filters. These mechanisms are necessary, but they do not enforce security
-properties that depend on the complete execution trace. We study a
-\emph{local-permission/global-policy gap}: every individual tool call can be
-locally authorized, syntactically valid, and plausible, while the composed
-sequence violates a policy over provenance, audience, tenant boundaries,
-long-term memory, approval scope, or aggregation. We introduce TraceBreak, a
-fully synthetic benchmark of paired safe and risky enterprise workflows, and
-TraceGuard, a deterministic provenance monitor that propagates source tags
-through reads, summaries, memory, and write sinks. In a 120-task deterministic
-validation matrix, local guards and visible-content DLP allow all risky traces,
-whereas TraceGuard blocks all risky writes with no safe-control false blocks. In
-a 24-task API subset using \texttt{gpt-4.1-mini}, local guards and DLP again
-produce local-pass violations on every risky task; policy prompting reduces but
-does not eliminate violations and lowers task completion; TraceGuard blocks all
-risky sink attempts while preserving safe-control utility. These results suggest
-that secure agent scaffolds should treat the execution trace, not only the next
-tool call or the model prompt, as a first-class enforcement object.
+Tool-using language-model agents are often protected one action at a time: a
+tool call is checked for a valid recipient, a visible-content filter scans the
+message body, or a policy prompt asks the model to ``be careful.'' These
+mechanisms are useful, but many agentic security policies are trace properties.
+They depend on where information came from, how it was transformed, which actor
+received it, and whether an approval or aggregation rule still applies. We study
+this \emph{local-permission/global-policy gap}: every individual tool call in a
+workflow can be locally authorized and plausible, while the composed execution
+violates a policy over provenance, audience, tenant boundaries, memory, approval
+scope, or aggregation. We introduce TraceBreak, a synthetic benchmark of paired
+safe and risky enterprise workflows, and TraceGuard, a deterministic provenance
+monitor that propagates source tags through reads, summaries, memory, and write
+sinks. On 120 deterministic paired tasks, local guards and visible-content DLP
+permit all risky traces, while TraceGuard blocks all risky writes with no
+safe-control false blocks. On a 24-task API subset with \texttt{gpt-4.1-mini},
+local guards and DLP again produce local-pass violations on every risky task;
+policy prompting reduces but does not eliminate violations; TraceGuard blocks all
+risky sink attempts while preserving safe-control utility. Additional replay
+audits show that model-written provenance references are not an adequate trust
+boundary: deleting or corrupting sink references breaks ordinary TraceGuard,
+whereas runtime-inferred provenance restores safety on the replay. The result is
+a simple lesson for agent security: the execution trace, not only the next tool
+call or the natural-language prompt, should be a first-class enforcement object.
 \end{abstract}
 
 \section{Introduction}
 
-Tool-using language-model agents increasingly perform enterprise workflows by
-combining search, document reads, summaries, long-term memory, approvals,
-delegation, and external writes. This shift changes the unit of security. In a
-single API call, it is natural to ask whether the caller is allowed to invoke a
-tool and whether the tool arguments are well formed. In an agent workflow, the
-more important question is often whether information read earlier in the trace is
-allowed to reach a later sink. An agent may read an internal renewal memo,
-summarize it, save the summary into shared memory, and later email the digest to
-an external vendor. Each step can be locally reasonable: the document exists, the
-summary tool is permitted, the memory key is valid, and the recipient is a known
-contact. The complete trace is nevertheless a data-flow violation.
+Language-model agents are moving from answering questions to operating
+workflows. A single task may require searching enterprise documents, reading
+records, summarizing intermediate results, saving a handoff note to shared
+memory, consulting an approval, and finally sending an email or updating a ticket.
+This composition is precisely what makes agents useful, and precisely what makes
+them hard to secure. The security question is no longer just ``is this tool call
+well formed?'' It is often ``is the data that arrived here allowed to flow to
+this sink, for this recipient, under this approval, after these transformations?''
 
-This failure mode is broader than direct prompt injection or a single bad tool
-call. In many deployed and proposed agent systems, security-relevant facts are
-not co-located with the action being checked. The sensitivity of a document is a
-property of the source object, the trust level of a recipient is a property of an
-identity record, the validity of an approval depends on the object, recipient,
-purpose, and time, and whether an export is permitted can depend on whether an
-intermediate representation is an aggregate or a list of identified records. A
-local guard that only inspects the current tool name and visible arguments does
-not have enough information to enforce these invariants. A prompt-only policy can
-ask the model to respect the rules, but it is not an execution boundary.
+Most lightweight agent safeguards answer the first question. A local tool guard
+can check that a document ID exists, a recipient is known, or a source reference
+is syntactically valid. A visible-content DLP rule can scan the current email
+body for a secret-looking string. A prompt can instruct the model not to violate
+policy. None of these mechanisms necessarily knows that the innocuous phrase
+``short renewal update'' was derived from a confidential AtlasCo pricing memo
+read four steps earlier, or that an approval was scoped to a different recipient.
+The dangerous fact is distributed across the source object, the transformation
+history, the recipient record, the approval, and the final sink.
 
-We isolate this problem as the \emph{local-permission/global-policy gap}. A
-trace has a local-pass violation when all executed tool calls satisfy the local
-authorization checks available at their call sites, yet the trace as a whole
-violates a global invariant over hidden metadata and history. The gap is
-especially relevant for multi-agent systems: a researcher agent may observe a
-source, a planner may transform or store it, and an executor may perform the
-write. No individual actor necessarily sees the whole policy state.
+This paper studies the resulting \emph{local-permission/global-policy gap}. A
+trace has a local-pass violation when every executed tool call passes local
+authorization, yet the full trace violates a global policy. The gap is not
+limited to explicit prompt injection. It can arise in ordinary-looking workflows:
+a confidential document is summarized before being emailed externally; a support
+record for one tenant is used to update another tenant's ticket; a detailed list
+of records is exported where only an aggregate is allowed; or a memory entry
+launders the sensitivity of its source. The failure is also naturally
+multi-agent. A researcher may read the source, a planner may summarize or store
+it, and an executor may perform the final write. Each actor sees only a slice of
+the policy state.
 
-This paper makes four contributions.
+The security community has seen analogous problems before. Complete mediation
+requires checking access whenever an object is used \citep{saltzer1975protection};
+information-flow control tracks whether data may move between labeled contexts
+\citep{denning1976lattice}; runtime monitors enforce trace properties
+\citep{schneider2000enforceable}; and confused-deputy failures occur when
+authority is silently separated from the object or request it should constrain
+\citep{hardy1988confused}. Modern LLM agents recreate these classic concerns in
+a new substrate: natural-language transformations, tool observations, memory, and
+delegation can erase the connection between data and authority unless the runtime
+preserves it.
+
+We make the problem concrete with TraceBreak, a small synthetic benchmark of
+paired safe and risky enterprise workflows. Each risky task has a matched safe
+control that changes one policy-relevant field while keeping the surface task
+nearly identical. This lets us measure both security and utility: a useful guard
+should block the risky sink but allow the matched safe sink. We also implement
+TraceGuard, a simple provenance monitor that attaches tags to tool outputs,
+conservatively merges tags through transformations, and checks the merged tag
+only when data reaches a sink.
+
+Our contributions are:
 \begin{enumerate}
-    \item We formalize trace-level policy violations in tool-using agents,
+    \item We formalize local-pass trace violations for tool-using agents,
     distinguishing action-local permission checks from global invariants over
-    provenance, recipients, tenants, memory, approvals, and aggregation state.
-    \item We implement TraceBreak, a fully synthetic, deterministic benchmark of
-    120 paired risky and safe-control workflows across six compositional policy
+    provenance, audience, tenant, memory, approval, and aggregation state.
+    \item We introduce TraceBreak, a releaseable synthetic benchmark with 120
+    paired risky/safe-control workflows across six compositional policy
     categories.
     \item We evaluate local guards, visible-content DLP, visible-policy and
-    prompt-only baselines, and TraceGuard under both scripted traces and a
-    bounded API agent subset.
-    \item We release TraceGuard as a simple reference monitor baseline. The goal
-    is not to claim that this monitor solves all agent security, but to provide a
-    reproducible testbed where structural trace enforcement can be compared with
-    model-side and action-local defenses.
+    prompt-only baselines, same-action defense replays, and TraceGuard under
+    deterministic and API-driven traces.
+    \item We identify an important implementation boundary: provenance fields
+    written by the model are convenient for benchmarking but are not a trustworthy
+    enforcement substrate. Runtime-inferred provenance is the stronger design.
 \end{enumerate}
 
-\section{Threat Model and Problem Definition}
+\begin{figure}[t]
+\centering
+\fbox{
+\begin{minipage}{0.93\linewidth}
+\small
+\textbf{Placeholder for final Figure 1: Trace-level policy enforcement at a glance.}
+
+\textbf{Panel A: the failure.} Draw a left-to-right trace:
+\emph{read confidential AtlasCo document} $\rightarrow$ \emph{summarize}
+$\rightarrow$ \emph{write/read shared memory} $\rightarrow$ \emph{send email to
+external recipient}. Put a green check under each local action and a red
+``global violation'' mark at the final sink. The visual message should be:
+``every action is locally allowed, but the composed flow is not.''
+
+\textbf{Panel B: the method.} Overlay TraceGuard tags on the same trace. Show a
+tag attached to the document, merged through summary/memory, and checked at the
+sink against recipient/approval/tenant/aggregation policy. Mark the sink as
+blocked with a short reason such as \texttt{internal\_data\_to\_external}.
+
+\textbf{Panel C: the empirical takeaway.} Add a tiny security--utility plot:
+x-axis = risky violation rate (lower is better), y-axis = safe utility (higher
+is better). Place local guard and DLP in the high-utility/high-risk corner,
+policy prompt in the middle, and TraceGuard/runtime-inferred TraceGuard in the
+high-utility/low-risk corner. Optionally add a small callout:
+``model-written refs fail under deletion/corruption; runtime-owned provenance
+recovers safety.''
+\end{minipage}}
+\caption{Suggested replacement for the current rough schematic. The final figure
+should combine the problem, the TraceGuard mechanism, and the main empirical
+takeaway in one visual.}
+\label{fig:overview-placeholder}
+\end{figure}
+
+\section{Problem Setting}
 
 We consider an agent system that interacts with a synthetic enterprise
-environment through structured tools. The environment contains documents,
-people, customers, support records, approvals, and shared memory. Tools include
-search, reads, summarization, memory writes and reads, approval lookup, record
+environment through structured tools. The world contains documents, people,
+customers, support records, approvals, and shared memory. Tools include search,
+reads, summarization, memory writes and reads, approval lookup, record
 aggregation, email, ticket updates, and final answers. Email and ticket updates
-are local simulator sinks; no real external service is used.
+are simulator sinks; no real external service is used.
 
 A trace is a sequence
 \[
 \tau = [(a_1, t_1, x_1, y_1, m_1), \ldots, (a_T, t_T, x_T, y_T, m_T)],
 \]
 where $a_t$ is the actor, $t_t$ the tool, $x_t$ the tool input, $y_t$ the tool
-output, and $m_t$ hidden metadata such as provenance tags. The hidden metadata is
-not shown to the language model in the API experiments. Instead, the runtime
-attaches it to tool outputs and propagates it through later references.
-
-Each proposed action is evaluated by a local permission function
+output, and $m_t$ hidden runtime metadata such as provenance tags. A local guard
+evaluates each proposed action with a function
 $L(x_t, s_t) \in \{\mathrm{allow}, \mathrm{deny}\}$ over visible call-site
-state $s_t$: whether the tool exists, whether the object identifiers are valid,
-and whether referenced observations exist. The full trace is evaluated by a
-global invariant $G(\tau,w) \in \{\mathrm{safe}, \mathrm{violation}\}$ over the
-complete world state $w$ and all executed events. A local-pass violation occurs
-when
+state $s_t$: the tool exists, object identifiers are valid, and referenced
+observations exist. A global policy evaluates the whole trace with
+$G(\tau,w) \in \{\mathrm{safe}, \mathrm{violation}\}$ over world state $w$ and
+the executed events. A local-pass violation occurs when
 \[
-\forall t, L(x_t, s_t)=\mathrm{allow}
+\forall t,\; L(x_t, s_t)=\mathrm{allow}
 \quad\text{but}\quad
 G(\tau,w)=\mathrm{violation}.
 \]
 
-The adversary in TraceBreak is not a malicious user writing exploit strings.
-Instead, the risky tasks are benign-looking workflows whose requested sink is
-invalid under hidden enterprise policy. This design intentionally separates the
-trace-level policy problem from prompt-injection detection. We exclude trivial
-cases where a single tool call violates an ACL or where the sink body contains an
-obvious literal secret marker. We also avoid LLM judges for ground truth: a
-violation is counted only when the executed trace performs a forbidden write,
-cross-tenant update, invalid approval use, or non-aggregate export.
-
-\paragraph{Non-goals.}
-TraceBreak is not a leaderboard of model alignment, a realistic enterprise DLP
-product, or a complete information-flow control system. It is a controlled
-benchmark for one question: can a defense enforce policies whose decisive facts
-are distributed across the trace rather than visible in the next action alone?
+TraceBreak does not rely on a malicious user prompt. Risky tasks are
+benign-looking workflows whose requested sink is invalid under hidden enterprise
+policy. We exclude trivial cases where a single action violates an ACL or where a
+visible sink body contains an obvious literal secret. We also avoid LLM judges
+for ground truth: a violation is counted only when the executed trace performs a
+forbidden write, cross-tenant update, invalid approval use, or non-aggregate
+export. This makes the benchmark narrow, but its labels deterministic.
 
 \section{TraceBreak Benchmark}
 
 TraceBreak is a pure-Python simulator with deterministic task generation and
-matched counterfactual controls. The benchmark contains 120 tasks: 10 seeds for
-each of six categories, with one risky task and one safe-control task per seed.
-The safe control changes a single policy-relevant field---for example the
-recipient, tenant, approval scope, or output form---while preserving the surface
-workflow. This pairing is important: a defense should block the risky sink
-without losing utility on a nearly identical safe task.
+matched counterfactual controls. It contains 120 tasks: 10 seeds for each of six
+policy categories, with one risky task and one safe-control task per seed. The
+safe control changes a single policy-relevant field---for example the recipient,
+tenant, approval scope, or output form---while preserving the surface workflow.
 
 \begin{table}[t]
 \centering
 \small
-\begin{tabular}{p{0.23\linewidth}p{0.35\linewidth}p{0.31\linewidth}}
+\begin{tabular}{p{0.24\linewidth}p{0.35\linewidth}p{0.30\linewidth}}
 \toprule
 Category & Risky pattern & Safe-control flip \\
 \midrule
@@ -178,53 +221,48 @@ Aggregation threshold & Identified record list is exported externally & Only
 de-identified aggregate statistics are sent \\
 \bottomrule
 \end{tabular}
-\caption{TraceBreak categories. Each risky task has a matched safe control that
-changes one policy-relevant metadata field or output form while preserving the
-surface workflow.}
+\caption{TraceBreak categories. Matched controls preserve the workflow while
+flipping one policy-relevant field, so security and utility can be measured
+together.}
 \label{tab:categories}
 \end{table}
 
-The key design principle is that hidden policy metadata is separated from visible
-text. For example, a visible document may simply contain renewal planning notes;
-its hidden tag records that it is confidential, belongs to AtlasCo, is intended
-for sales and finance, and is not externally shareable. Similarly, a person
-record exposes a role and organization, while the global policy determines
-whether that role is in the source audience. This design tests whether an
-enforcement mechanism tracks provenance rather than whether a content filter sees
-a literal word such as ``confidential.''
+The key benchmark design choice is that policy metadata is separated from visible
+text. A document may visibly contain only renewal planning notes, while its hidden
+tag records that it is confidential, belongs to AtlasCo, is intended for sales
+and finance, and is not externally shareable. This separation tests whether a
+defense tracks provenance and policy state, rather than whether it notices a
+literal marker such as ``confidential.''
 
-\paragraph{Task execution.}
-We evaluate two kinds of traces. Scripted traces execute canonical plans for each
-category under single-agent and multi-agent scaffolds. API traces use a language
-model that selects one JSON tool call at a time from the current instruction and
-visible observations. The model is instructed to use observation references
-through a \texttt{source\_refs} field when transformed information is written to
-email, tickets, memory, summaries, or aggregates. In the current implementation,
-TraceGuard's guarantees are conditional on such runtime-maintained dependencies;
-a production implementation should make dependency tracking mandatory or
-runtime-inferred rather than relying on model-written references.
+We evaluate two execution modes. Scripted traces replay canonical plans under
+single-agent and multi-agent scaffolds. API traces use a language model that
+selects one JSON tool call at a time from the user instruction and visible
+observations. In the cooperative API setting, the model is instructed to include
+\texttt{source\_refs} when writing transformed information to email, tickets,
+memory, summaries, or aggregates. Later stress tests delete or corrupt these
+references to separate the clean benchmark result from the stronger production
+claim.
 
-\section{Defenses}
+\section{TraceGuard and Baselines}
 
 \paragraph{Local guards.}
-The local guard checks only action-local validity: the tool is known, object IDs
-exist, recipients exist, approvals exist, and declared source references are well
-formed. It does not track where information came from, what tenant the source
-belongs to, or whether an approval covers the proposed sink.
+The local guard validates the current action only: the tool is known, object IDs
+exist, recipients and approvals exist, and declared source references are well
+formed. It does not track where information came from or whether a later sink is
+compatible with earlier sources.
 
 \paragraph{Visible-content DLP.}
 The DLP baseline blocks visible sensitive markers such as ``confidential'' or
 ``restricted'' and exact non-shareable document titles in external writes. It is
-a deliberately limited baseline that represents simple text filtering without
-hidden provenance.
+a deliberately simple baseline for text filtering without hidden provenance.
 
 \paragraph{Visible policy and policy prompting.}
-The deterministic visible-policy guard checks public fields available at the
-sink, such as whether an approval identifier visibly matches the requested
-recipient and whether an external email references many outputs. The API
-policy-prompt condition instead adds natural-language instructions forbidding
-unauthorized sharing, tenant mixing, invalid approval reuse, and memory
-laundering. Neither baseline receives hidden source tags.
+The deterministic visible-policy guard checks public sink-visible fields, such as
+whether an approval visibly matches the requested recipient or whether an
+external email references many outputs. The API policy-prompt condition instead
+adds natural-language instructions forbidding unauthorized sharing, tenant
+mixing, invalid approval reuse, and memory laundering. Neither receives hidden
+source tags.
 
 \paragraph{TraceGuard.}
 TraceGuard attaches a \texttt{DataTag} to each tool output. Tags include source
@@ -233,246 +271,233 @@ external-share flag, record count, and aggregate-only status. Transformations
 such as summaries, memory writes, and memory reads merge tags conservatively:
 sensitivity takes the maximum level, tenants and sources are unioned, audience
 restrictions are intersected when present, and external sharing is allowed only
-if all sources allow it. Sinks such as email and ticket updates evaluate the
-merged tag against the recipient, tenant, approval, and aggregation invariants.
+if all sources allow it. Sinks such as email and ticket updates check the merged
+tag against recipient, tenant, approval, and aggregation invariants.
 
 For email, TraceGuard blocks if non-shareable data reaches an external recipient
 without a matching approval, if the recipient role is outside the allowed
 audience, if tenant-specific data reaches another tenant, if an approval does not
 match the object, recipient, purpose, or time, or if a detailed record list above
 the aggregation threshold is exported externally. For ticket updates, it blocks
-cross-tenant writes. Figure~\ref{fig:traceguard-schematic} illustrates the main
-difference from local guards: the same locally allowed steps are permitted until
-the tagged data reaches an invalid sink.
+cross-tenant writes.
 
-\begin{figure}[t]
-\centering
-\small
-\begin{tikzpicture}[
-    x=1cm,
-    y=1cm,
-    every node/.style={font=\scriptsize},
-    box/.style={draw, rounded corners=2pt, minimum width=1.45cm, minimum height=0.48cm, align=center},
-    ok/.style={box, draw=green!55!black, fill=green!5},
-    block/.style={box, draw=red!70!black, fill=red!5},
-    arrow/.style={->, line width=0.5pt, draw=gray!70}
-]
-\node[anchor=east] at (-0.25, 0.7) {Local};
-\node[anchor=east] at (-0.25, -0.35) {TraceGuard};
+\paragraph{Runtime-inferred provenance.}
+The clean API benchmark uses model-supplied \texttt{source\_refs}. This is useful
+for exposing how trace monitors work, but not sufficient as a security boundary.
+We therefore add offline replays that infer sink provenance from trusted runtime
+events rather than trusting the sink's own references. This variant is the design
+we would prefer in deployment: the runtime, not the model, owns the dependency
+graph.
 
-\node[ok] (l1) at (0.7, 0.7) {search\\allow};
-\node[ok] (l2) at (2.55, 0.7) {read\\allow};
-\node[ok] (l3) at (4.40, 0.7) {summarize\\allow};
-\node[ok] (l4) at (6.25, 0.7) {recipient\\allow};
-\node[ok] (l5) at (8.10, 0.7) {email\\allow};
+\section{Experiments and Results}
 
-\node[ok] (g1) at (0.7, -0.35) {search\\allow};
-\node[ok] (g2) at (2.55, -0.35) {read\\allow};
-\node[ok] (g3) at (4.40, -0.35) {summarize\\allow};
-\node[ok] (g4) at (6.25, -0.35) {recipient\\allow};
-\node[block] (g5) at (8.10, -0.35) {email\\block};
-
-\foreach \a/\b in {l1/l2,l2/l3,l3/l4,l4/l5,g1/g2,g2/g3,g3/g4,g4/g5}
-  \draw[arrow] (\a) -- (\b);
-
-\node[align=center, text=gray!70!black] at (3.85, -1.05)
-  {tag: confidential, AtlasCo, no external share};
-\node[align=center, text=red!70!black] at (8.10, -1.30)
-  {block reason:\\internal data to external recipient};
-\end{tikzpicture}
-\caption{Local guards evaluate each action independently. TraceGuard propagates
-hidden provenance tags through transformations and blocks when the tagged data
-reaches an invalid sink.}
-\label{fig:traceguard-schematic}
-\end{figure}
-
-\section{Experiments}
-
-\paragraph{Protocol.}
-We run two evaluations. First, a deterministic scripted matrix validates that the
-benchmark and monitor implement the intended invariants over all 120 tasks.
-Second, a bounded API subset uses \texttt{gpt-4.1-mini} on two task seeds,
-covering two risky/safe pairs per category, for 24 tasks per condition. API runs
-use cached responses, structured JSON actions, a maximum of eight tool steps,
-temperature zero, and deterministic grading from executed sink events. We report
-sink rate, safe utility, risky global violation rate, local-pass violation rate
-(LPVR), safe false-block rate, risky block rate, and average model calls.
-
-\paragraph{Metrics.}
-Safe utility is the fraction of safe controls where the expected sink executes
-without a global violation. Risky violation is the fraction of risky tasks where
-a forbidden sink executes. LPVR is the fraction of risky tasks where all local
-checks allow the trace and a global violation still occurs. Safe false block is
-the fraction of safe controls blocked by the defense. A lower sink rate is not
-itself a failure: for TraceGuard, the expected behavior is to execute safe sinks
-and block risky sinks, producing a 50\% overall sink rate on a balanced dataset.
+\paragraph{Protocol and metrics.}
+We run a 120-task deterministic validation matrix and a 24-task API subset using
+\texttt{gpt-4.1-mini}. API runs use cached responses, structured JSON actions,
+temperature zero, a maximum of eight tool steps, and deterministic grading from
+executed sink events. The main metrics are safe utility, the fraction of safe
+controls completed without violation; risky violation, the fraction of risky
+tasks where a forbidden sink executes; and local-pass violation rate (LPVR), the
+fraction of risky tasks where all local checks pass but the trace violates
+global policy. We keep detailed sink rates, block rates, category tables, and
+token/cost fields in the artifact rather than overloading the main text.
 
 \begin{table}[t]
 \centering
-\scriptsize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{lrrrrrr}
+\small
+\begin{tabular}{lccc}
 \toprule
-Condition & Sink & Safe util. & Risky viol. & LPVR & Safe FP & Calls \\
+Condition & Safe utility & Risky violation & Interpretation \\
 \midrule
-Local guards & 100 & 100 & 100 & 100 & 0 & 5.1 \\
-Content DLP & 100 & 100 & 100 & 100 & 0 & 5.1 \\
-Policy prompt & 79 & 83 & 75 & 75 & 0 & 4.6 \\
-TraceGuard & 50 & 100 & 0 & 0 & 0 & 5.1 \\
+Local guards & 100\% & 100\% & Completes tasks, but no trace safety \\
+Content DLP & 100\% & 100\% & String filtering misses provenance \\
+Policy prompt & 83\% & 75\% & Helps, but not an enforcement boundary \\
+TraceGuard & 100\% & 0\% & Blocks risky sinks, preserves safe controls \\
 \bottomrule
 \end{tabular}
-\caption{API subset results with \texttt{gpt-4.1-mini}. Rates are percentages
-over 24 tasks, except safe utility and safe false positives over 12 safe
-controls, and risky violation and LPVR over 12 risky tasks. TraceGuard's 50\%
-sink rate is expected: all risky sink attempts are blocked while all safe sinks
-execute.}
+\caption{Main API subset result over 24 \texttt{gpt-4.1-mini} tasks. Full
+metrics, calls, confidence intervals, and category breakdowns are in the
+artifact.}
 \label{tab:api-main}
 \end{table}
 
+\paragraph{Finding 1: local success is not trace safety.}
+Local guards and content DLP complete all safe controls and all risky tasks in
+both the deterministic suite and the API subset. That looks like high task
+success, but every risky completion is a local-pass violation. The decisive fact
+is usually not in the current action string: it is in the source tag, recipient
+metadata, approval record, memory history, or aggregation state. This is the core
+local-permission/global-policy gap.
+
+\paragraph{Finding 2: prompting helps, but mostly by behavior change.}
+The policy prompt reduces API risky violations from 100\% to 75\%, but safe
+utility also drops from 100\% to 83\%. The policy-prompt diagnostic shows that
+some avoided risky violations are abstentions that also lose matched safe
+controls, while another changes the sink target rather than enforcing the
+intended policy. Prompting is useful guidance, but it is not a reliable execution
+boundary.
+
+\paragraph{Finding 3: structural policy state is the missing object.}
+TraceGuard blocks every risky sink attempt in the 120-task validation and the
+24-task API subset while preserving all safe-control completions. The same-action
+replay sharpens the conclusion: using the exact actions proposed by the API-local
+agent, DLP still misses all risky traces, visible-policy review blocks only the
+sink-visible approval and bulk-export subset, and both TraceGuard and a
+metadata-aware critic block all risky sinks with no safe false blocks
+(Table~\ref{tab:replay-summary}). The difference is not more natural-language
+review; it is access to the policy state that local defenses lack.
+
 \begin{table}[t]
 \centering
-\scriptsize
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{lrrrrr}
+\small
+\begin{tabular}{lccp{0.33\linewidth}}
 \toprule
-Condition & Sink & Safe util. & Risky viol. & LPVR & Safe FP \\
+Replay defense & Safe utility & Risky violation & What the result shows \\
 \midrule
-Single local & 100 & 100 & 100 & 100 & 0 \\
-Multi local & 100 & 100 & 100 & 100 & 0 \\
-DLP & 100 & 100 & 100 & 100 & 0 \\
-Visible policy & 83 & 100 & 67 & 67 & 0 \\
-TraceGuard & 50 & 100 & 0 & 0 & 0 \\
+DLP & 100\% & 100\% & Visible text is insufficient \\
+Visible policy & 100\% & 67\% & Sink-visible facts cover only part of the policy \\
+Metadata critic & 100\% & 0\% & Hidden metadata is enough on fixed actions \\
+TraceGuard & 100\% & 0\% & Deterministic tags match metadata-aware review \\
 \bottomrule
 \end{tabular}
-\caption{Deterministic 120-task validation. Scripted traces verify that the
-ground-truth invariants and monitor behave as intended across all paired tasks.}
-\label{tab:det-main}
+\caption{Same-action replay over the 24 API-local traces. The model actions are
+fixed; only the defense changes.}
+\label{tab:replay-summary}
 \end{table}
 
-\paragraph{Main findings.}
-Local guards and content DLP complete all safe controls and all risky tasks in
-both evaluations, but every risky completion is a local-pass violation. This is
-the intended blind spot: the dangerous fact is often not visible in a single
-action string. It is stored in the source tag, recipient metadata, approval
-record, or previous memory event. Policy prompting helps, but it is not an
-enforcement boundary. In the API subset, the policy prompt lowers risky
-violation rate from 100\% to 75\%, but also lowers safe utility from 100\% to
-83\%; the supplementary prompt diagnostic shows that two avoided
-approval-scope risky violations are abstentions that also lose the matched safe
-controls, and the remaining avoided cross-tenant risk changes the sink target
-rather than enforcing policy. TraceGuard blocks every risky sink attempt in both
-evaluations while preserving all safe-control completions. On the 12 matched
-risky API pairs, TraceGuard improves over local guards and DLP on all pairs and
-over policy prompting on 9 pairs.
-Supplementary category tables show the API pattern in all six categories;
-the block-reason audit shows category-aligned reasons with no safe-control
-blocks; fixed-action replays and deterministic authority-transfer,
-injection-overlay, and decoy-clutter checks show the same structural gap without
-cross-condition sampling noise.
+\paragraph{Finding 4: provenance must be runtime-owned.}
+A source-reference audit finds that all 92 executed write sinks in the cached
+cooperative API traces carry nonempty, valid prior references. However, this
+cooperation should not be trusted. When we replay TraceGuard after deleting sink
+references, ordinary TraceGuard permits all risky replays; when we corrupt sink
+references to benign public observations, it still permits most risky replays.
+A conservative StrictTraceGuard restores safety for missing references but
+heavily overblocks safe controls. Runtime-inferred provenance recovers the right
+behavior on sink deletion and corruption: 100\% safe utility, 0\% risky
+violations, and 100\% risky blocks. Erasing intermediate transform references
+creates one laundering violation for ordinary TraceGuard; runtime inference
+removes that violation with one safe false block. The production lesson is clear:
+do not trust model-authored provenance fields when the runtime can infer or
+validate dependencies itself.
 
-\paragraph{Provenance stress test.}
-A direct concern is that TraceGuard might rely on model-authored
-\texttt{source\_refs}. A cached audit confirms 92/92 executed API sinks have
-valid prior refs. We replay the same 24 API TraceGuard traces after deleting
-sink refs, corrupting them to benign public observations, or erasing refs from
-intermediate summaries/memory/aggregates. Ordinary TraceGuard fails under sink
-deletion (100\% risky violations), sink corruption (83\%), and one
-summary-laundering intermediate case. StrictTraceGuard fixes missing sink refs
-but creates 92\% safe false blocks and does not fix stale refs. A
-runtime-inferred replay reconstructs sink tags from trusted event tags,
-recovering sink deletion and corruption with 100\% safe utility, 0\% risky
-violations, and 100\% risky blocks; it also removes the intermediate violation,
-with one safe false block. The production lesson is to validate or infer
-dependencies rather than trust model-written provenance fields.
-
-\paragraph{Why visible defenses fail.}
-DLP fails when the sink body is innocuous but its provenance is not: ``Short
-update from the latest notes'' has no literal secret marker, yet may derive
-from a confidential AtlasCo document. Visible-policy review catches sink-visible
-approval and bulk-export cases, but misses source-tag tenant, audience, memory,
-and confidentiality facts. In same-action replay, it leaves 67\% risky
-violations; the visibility-gap audit shows these are exactly the hidden-metadata
-categories. A metadata-aware critic given hidden tags ties TraceGuard at 0\%.
-The missing object is policy state, not another natural-language reviewer.
+\paragraph{Robustness checks.}
+Supplementary audits support the same story without additional API spending.
+Category tables show the API pattern across all six categories. The
+block-reason audit finds category-aligned TraceGuard reasons and no safe-control
+blocks. Deterministic authority-transfer, indirect-injection overlay, and
+decoy-clutter stress tests preserve the structural gap: local and DLP defenses
+miss risky local-pass violations, visible-policy defenses catch only visible
+subsets, and TraceGuard or runtime-inferred TraceGuard blocks risky sinks while
+preserving matched safe controls.
 
 \paragraph{Example trace.}
 In a sensitive-external task, the agent searches for AtlasCo renewal notes, reads
-\texttt{doc\_pricing\_100}, summarizes the result, finds an external recipient,
-and sends an email. Local checks allow every step. The hidden tag on the email
-body still contains \texttt{source=doc\_pricing\_100},
+\texttt{doc\_pricing\_100}, summarizes it, finds an external recipient, and
+sends an email. Local checks allow every step. The hidden tag on the email body
+still contains \texttt{source=doc\_pricing\_100},
 \texttt{sensitivity=confidential}, \texttt{tenant=AtlasCo}, and
 \texttt{external\_share=false}. TraceGuard blocks the same final email with
-reason \texttt{internal\_data\_to\_external\_recipient}. A compact trace pair is
-included in \texttt{paper/tables/example\_traces.md}.
+reason \texttt{internal\_data\_to\_external\_recipient}. The artifact includes a
+compact trace pair and per-category examples.
 
 \paragraph{Reproducibility.}
-TraceBreak does not depend on private data or human labels. Tasks are generated
-from deterministic seeds, traces are written as JSONL, API responses are cached,
-and all headline metrics are recomputed from executed sink events rather than
-from an LLM judge. The artifact includes scripts to regenerate the 120-task
-dataset, rerun each condition, recompute point-estimate tables, export example
-traces, and rebuild the paper.
+TraceBreak uses synthetic data and deterministic labels. Tasks are generated from
+seeds, traces are stored as JSONL, API responses are cached, and all headline
+metrics are recomputed from executed sink events rather than LLM judges. The
+artifact includes scripts for the deterministic suite, API subset, same-action
+replays, provenance stress tests, category examples, claim-boundary audits, and
+paper rebuilds.
 
 \section{Related Work}
 
-\paragraph{Prompt injection and tool-using agents.}
-Indirect prompt injection showed that LLM-integrated applications blur data and
-instructions when they process untrusted external content
-\citep{greshake2023notwhat,liu2023promptinjection}. Later benchmarks and
-surveys formalize prompt-injection attacks, defenses, and tool-agent security
-risks \citep{liu2023formalizingprompt,owasp2025llm01,debenedetti2024agentdojo,zhan2024injecagent,zhang2024asb}.
-TraceBreak is complementary: the violation need not come from an adversarial
-instruction, and locally benign steps can compose into a global-policy failure.
+\paragraph{Tool-using agents and agent benchmarks.}
+Early agentic prompting and tool-use work showed that language models can
+interleave reasoning with actions and call external APIs \citep{yao2022react},
+learn to use tools \citep{schick2023toolformer}, and interact with large API
+collections \citep{patil2023gorilla}. This increased capability motivates
+benchmarks for tool-use reliability and rule following, such as $\tau$-bench for
+tool-agent-user interaction in realistic domains \citep{yao2024taubench}.
+TraceBreak follows this line in treating tools and executed state as the unit of
+evaluation, but focuses on trace-level security rather than task success alone.
+
+\paragraph{Prompt injection and agent security benchmarks.}
+Indirect prompt injection showed that LLM-integrated applications can confuse
+untrusted external content with trusted instructions
+\citep{greshake2023notwhat,liu2023promptinjection}. Follow-up work formalizes
+prompt-injection attacks and defenses \citep{liu2023formalizingprompt}, and
+OWASP identifies prompt injection, excessive agency, and sensitive information
+disclosure as central LLM-application risks \citep{owasp2025llm01}. AgentDojo,
+InjecAgent, ASB, and AgentSecBench benchmark attacks and defenses in tool-using
+agents \citep{debenedetti2024agentdojo,zhan2024injecagent,zhang2024asb,alpay2026agentsecbench}.
+Recent contextual-integrity analysis argues that future prompt-injection
+failures can arise from manipulated context and inappropriate information flows,
+not only from obvious imperative strings \citep{abdelnabi2026promptintegrity}.
+TraceBreak is complementary: its risky tasks need not contain injected
+instructions at all. They are policy violations caused by locally valid
+composition.
 
 \paragraph{Runtime enforcement and information flow.}
-Runtime defenses increasingly move beyond prompt-only mitigation: Task Shield,
-RTBAS, AgentSpec, SafeAgent, and ClawGuard enforce task alignment,
-information-flow, trajectory-level, or user-confirmed constraints around tool use
-\citep{jia2024taskshield,zhong2025rtbas,wang2025agentspec,liu2026safeagent,zhao2026clawguard}.
-These systems target broad deployment settings. TraceGuard is narrower: a
-compact provenance monitor for tenant, audience, approval, memory, and
-aggregation policies, paired with safe controls so the
-local-permission/global-policy gap is measurable from raw traces.
+Our monitor is inspired by classic security ideas: least privilege and complete
+mediation \citep{saltzer1975protection}, information-flow labels
+\citep{denning1976lattice}, enforceable trace properties
+\citep{schneider2000enforceable}, and confused-deputy failures
+\citep{hardy1988confused}. Recent agent defenses bring related ideas into LLM
+systems. Task Shield checks action alignment with the user task
+\citep{jia2024taskshield}; MELON detects indirect prompt injection through
+masked re-execution and tool comparison \citep{zhu2025melon}; RTBAS and Fides
+adapt information-flow control to tool-based agents \citep{zhong2025rtbas,costa2025fides};
+AgentSpec and SafeAgent propose runtime protection architectures
+\citep{wang2025agentspec,liu2026safeagent}; and ClawGuard enforces
+user-confirmed constraints at tool-call boundaries \citep{zhao2026clawguard}.
+TraceGuard is intentionally narrower than these systems. Its purpose is to make
+one failure mode---local permission without global trace policy---easy to
+reproduce, measure, and audit with paired controls.
 
 \paragraph{Memory, multi-agent, and compositional risk.}
-Memory and retrieval can preserve unsafe influence across time
-\citep{chen2024agentpoison}, and multi-agent systems introduce coordination
-failures and new attack surfaces
+Long-lived memory and retrieval create persistence across turns and agents;
+AgentPoison shows that poisoned memory or knowledge bases can compromise LLM
+agents without model training \citep{chen2024agentpoison}. Multi-agent systems
+add delegation, partial observability, and authority-transfer risks
 \citep{schroederdewitt2025multiagentsecurity,hammond2025multiagentrisks}.
-Closest to TraceBreak are Policy-Invisible Violations on hidden policy facts
-\citep{wu2026policyinvisible} and Beyond Single-Agent Alignment on context-
-fragmented violations \citep{wu2026contextfragmented}. Our contribution is a
-releaseable paired benchmark and monitor for concrete runtime data flows, with
-sink-event metrics and provenance-deletion/corruption replays that separate the
-cooperative benchmark result from the stronger production claim.
+Closest to TraceBreak are Policy-Invisible Violations, which studies hidden
+policy facts \citep{wu2026policyinvisible}, and Beyond Single-Agent Alignment,
+which studies context-fragmented multi-agent violations
+\citep{wu2026contextfragmented}. TraceBreak should not claim that hidden policy
+state or trace enforcement is new. Its contribution is a compact, releaseable,
+paired benchmark with deterministic sink-event labels, same-action defense
+replays, and provenance deletion/corruption audits that make the trust boundary
+explicit.
 
 \section{Limitations and Ethics}
 
-TraceBreak is synthetic: this enables safe release, deterministic labels, and
-matched controls, but cannot capture all enterprise policy complexity.
-TraceGuard uses conservative tag propagation and hand-coded invariants; richer
-semantic transformations may require policy-specific declassification rules. The
-ordinary monitor still trusts correct \texttt{source\_refs}. Cached API sinks
-comply, but deleted- and corrupted-provenance replays show failures when sink
-references are missing or stale. Runtime-inferred sink tags restore safety and
-utility; a conservative missing-provenance blocker restores safety only for
-omissions and overblocks. Production monitors should validate provenance or
-infer runtime dependencies rather than trust model-authored fields.
+TraceBreak is synthetic. This enables safe release, deterministic labels, and
+matched controls, but it cannot capture all enterprise policy complexity.
+TraceGuard uses hand-coded invariants and conservative tag propagation; richer
+semantic transformations may require policy-specific declassification rules and
+finer-grained labels. The clean API result assumes cooperative \texttt{source\_refs};
+our provenance stress tests show why production monitors should validate or
+infer dependencies rather than trust model-authored fields. Runtime inference is
+promising in replay, but a live deployed system would still need careful
+engineering around implicit dependencies, redaction, declassification, and
+recovery after a block.
 
-API results are preliminary evidence, not a model leaderboard; zero observed
-TraceGuard violations cover TraceBreak invariants, not arbitrary enterprise
-policies. A matched-control oracle finds safe continuations for blocked traces,
-but live recovery remains future work. All data, people, tenants, documents,
-approvals, and messages are synthetic; no real email, ticketing, browsing, or
-external enterprise systems are used.
+The API subset is preliminary evidence, not a model leaderboard. The zero
+observed TraceGuard violations cover the implemented TraceBreak invariants, not
+arbitrary enterprise policies. We do not use real emails, tickets, browsing,
+credentials, tenants, or users. All data, people, documents, approvals, and
+messages are synthetic. The benchmark is intended for defensive evaluation of
+trace-level enforcement.
 
 \section{Conclusion}
 
-TraceBreak shows that tool-level permission is not compositional: locally
-allowed actions can jointly violate global policy over provenance, audience,
-tenant, memory, approval, or aggregation. Prompting and content filters miss
-hidden, distributed facts; deterministic trace monitoring closes this benchmark
-gap. Agent security should treat traces as first-class enforcement objects.
+Tool-level permission is not compositional. In TraceBreak, every individual
+action can be locally allowed while the complete trace violates a global policy
+over provenance, audience, tenant, memory, approval, or aggregation state. The
+main result is not that a small monitor solves agent security. It is that
+prompting and action-local checks leave a measurable gap whenever policy facts
+are distributed across the trace. Trace-level monitoring, especially with
+runtime-owned provenance, provides a simple and reproducible way to close that
+gap on this benchmark.
 
 \bibliographystyle{colm2026_conference}
 \bibliography{references}
